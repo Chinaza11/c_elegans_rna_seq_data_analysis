@@ -1,0 +1,157 @@
+---
+title: "C. elegans data analysis: GO Analysis (clusterProfiler)"
+author: "Chinaza"
+date: "`r Sys.Date()`"
+format: html
+editor: visual
+embed-resources: true
+---
+
+## Setting working directory and loading packages
+
+```{r}
+#| label: setup
+
+knitr::opts_knit$set(root.dir = "G:/My Drive/PhD/project/project_with_Dr.Reid/c.elegans_RNAseq_suppl/data_analysis/data_and_result")
+
+
+lst = c("clusterProfiler", "org.Ce.eg.db", "tibble", "enrichplot", "ggplot2")
+
+load_libraries = function(list_of_packages){
+  for (i in lst) {
+    suppressPackageStartupMessages(library(i, character.only = TRUE))}
+}
+
+load_libraries(lst)
+
+```
+
+## Functions
+
+```{r}
+
+go_analysis = function(path) {
+
+  df = read.table(path, header=TRUE, sep="\t")
+  df = rownames_to_column(df, var = "ncbi_locus_tag")
+  print("DeSeq2 result")
+  print(head(df))
+  cat("\n\n")
+  
+  ids = read.csv("DAVID-locus_tag_to_entrez_id.csv")
+  names(ids)[names(ids) == "From"] = "ncbi_locus_tag"
+  names(ids)[names(ids) == "To"] = "Entrez_id"
+  print("Locus tag to entrez ID")
+  print(head(ids))
+  cat("\n\n")
+  
+  merged_df = merge(df, ids, by = "ncbi_locus_tag", all = TRUE)
+  print("Merged dataframe")
+  print(head(merged_df))
+  cat("\n\n")
+  
+  genes_of_interest = as.character((subset(merged_df, padj < 0.05 & abs(log2FoldChange) > 1))$Entrez_id)
+  
+  ego = enrichGO(gene          = genes_of_interest,
+                  universe      = as.character(merged_df$Entrez_id),
+                  OrgDb         = org.Ce.eg.db,
+                  ont           = "BP",
+                  pAdjustMethod = "BH",
+                  pvalueCutoff  = 0.05,
+                  qvalueCutoff  = 0.05,
+                  readable      = TRUE)
+  
+  result = data.frame(ego)
+  print("Enrichment result (all GO BP terms)")
+  print(head(result))
+  cat("\n\n")
+  
+  modify_plot = theme(plot.title = element_text(size = 24, face ="bold", hjust = 0.5))
+  
+  print(dotplot(ego, showCategory = dim(result)[1]) + 
+    labs(title="Enriched GO Terms for Biological Process (all terms)", 
+         caption="GeneRatio ==> ratio of differential expressed genes that are annotated in a term\nCount ==> GeneCount") + 
+    modify_plot)
+  
+  ## use simplify to remove redundant terms
+  ego2 = simplify(ego, cutoff=0.7, by="p.adjust", select_fun=min)
+  result2 = data.frame(ego2)
+  print("Enrichment result (redundant terms removed)")
+  print(head(result2))
+  cat("\n\n")
+
+  print(dotplot(ego2, showCategory = dim(result2)[1]) + 
+          labs(title="Enriched GO Terms for Biological Process \n(redundant terms removed)",
+         caption="GeneRatio ==> ratio of differential expressed genes that are annotated in a term\nCount ==> GeneCount") + 
+    modify_plot) 
+  
+  print(cnetplot(ego2, showCategory = dim(result2)[1]) + 
+    ggtitle("Network Plot of Enriched Terms") + 
+    modify_plot)
+  
+  ego2 = pairwise_termsim(ego2) 
+  print(emapplot(ego2) + 
+    ggtitle("Enrichment Map showing overlapping terms") + 
+    modify_plot)
+  
+  return(ego2)
+}
+
+
+get_goplot = function(ego2) {
+  modify_plot = theme(plot.title = element_text(size = 24, face ="bold", hjust = 0.5))
+  
+  print(goplot(ego2, showCategory = dim(data.frame(ego2))[1]) + 
+    ggtitle("Directed Acyclic Graph of Enrichment Analysis") + 
+    modify_plot)
+}
+```
+
+## Control vs TPMG
+
+```{r fig.height=11, fig.width=10}
+
+path = "differential_expression_analysis/deseq2/tpmg_vs_control_df.txt"
+
+tpmg_ego2 = go_analysis(path)
+```
+
+```{r fig.height=12, fig.width=15}
+
+get_goplot(tpmg_ego2)
+```
+
+## Control vs TYFD
+
+```{r fig.height=11, fig.width=10}
+
+path = "differential_expression_analysis/deseq2/tyfd_vs_control_df.txt"
+
+tyfd_ego2 = go_analysis(path)
+```
+
+```{r fig.height=12, fig.width=15}
+
+get_goplot(tyfd_ego2)
+```
+
+## Control vs TYEX
+
+```{r fig.height=11, fig.width=10}
+
+path = "differential_expression_analysis/deseq2/tyex_vs_control_df.txt"
+
+tyex_ego2 = go_analysis(path)
+```
+
+```{r fig.height=12, fig.width=15}
+
+get_goplot(tyex_ego2)
+```
+
+## Session_Info
+
+```{r}
+
+sessionInfo()
+```
