@@ -2,4 +2,4 @@ This is the code repository for the RNA-Seq data analysis I performed for a proj
 
 This project resulted in a manuscript (see below) that is currently under review.
 
-Pohl F., Nnamdi C.D., Sanders A., Lambirth K., Reid R.W., et al. 2025. Supplementation with bovine thymus extract improves survival, motility and stress resistance in *C. elegans*. Journal of Functional Foods. \[Manuscript under review\].
+Pohl F., Nnamdi C.D., Sanders A., Lambirth K., Reid R.W., et al. 2026. Supplementation with bovine thymus extract improves survival, motility and stress resistance in *C. elegans*. Journal of Functional Foods. \[Manuscript under review\].
